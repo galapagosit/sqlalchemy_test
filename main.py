@@ -1,11 +1,17 @@
 
+from sqlalchemy import event
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine("postgresql://sqlalchemy_test:sqlalchemy_test@localhost:5432/sqlalchemy_test", echo=True)
+engine = create_engine("postgresql://sqlalchemy_test:sqlalchemy_test@localhost:5432/sqlalchemy_test", echo=False)
+
+@event.listens_for(engine, 'do_execute')
+def receive_do_execute(cursor, statement, parameters, context):
+    print('receive_do_execute!!')
+    print(statement)
 
 Base = declarative_base()
 
@@ -30,7 +36,13 @@ def main():
 
     ed_user = User(name='ed', fullname='Ed Jones', password='edspassword')
     session.add(ed_user)
-    session.commit()
+    session.query(User).filter(User.name == 'ed').\
+        update({User.name: 'jone'}, synchronize_session=False)
+
+    print('HHHHHHHHH')
+
+    for user in session.query(User).filter(User.name=='ed').filter(User.fullname=='Ed Jones'): 
+        print(user)
 
 if __name__ == '__main__':
     main()

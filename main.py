@@ -1,4 +1,4 @@
-
+import re
 from sqlalchemy import event
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -8,10 +8,22 @@ from sqlalchemy.ext.declarative import declarative_base
 
 engine = create_engine("postgresql://sqlalchemy_test:sqlalchemy_test@localhost:5432/sqlalchemy_test", echo=False)
 
+
+UPDATE_PATTERNS = [
+    re.compile(r'^INSERT '),
+    re.compile(r'^UPDATE '),
+    re.compile(r' INSERT '),
+    re.compile(r' UPDATE '),
+]
+
 @event.listens_for(engine, 'do_execute')
 def receive_do_execute(cursor, statement, parameters, context):
     print('receive_do_execute!!')
     print(statement)
+    for pattern in UPDATE_PATTERNS:
+        if pattern.match(statement):
+            print('pattern.match!!')
+            break
 
 Base = declarative_base()
 

@@ -1,60 +1,29 @@
-import re
-from sqlalchemy import event
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from models import Base, User
 
-engine = create_engine("postgresql://sqlalchemy_test:sqlalchemy_test@localhost:5432/sqlalchemy_test", echo=False)
-
-
-UPDATE_PATTERNS = [
-    re.compile(r'^INSERT '),
-    re.compile(r'^UPDATE '),
-    re.compile(r' INSERT '),
-    re.compile(r' UPDATE '),
-]
-
-@event.listens_for(engine, 'do_execute')
-def receive_do_execute(cursor, statement, parameters, context):
-    print('receive_do_execute!!')
-    print(statement)
-    for pattern in UPDATE_PATTERNS:
-        if pattern.match(statement):
-            print('pattern.match!!')
-            break
-
-Base = declarative_base()
-
-class User(Base):
-     __tablename__ = 'users'
-
-     id = Column(Integer, primary_key=True)
-     name = Column(String)
-     fullname = Column(String)
-     password = Column(String)
-
-     def __repr__(self):
-         return "<User(name='%s', fullname='%s', password='%s')>" % (
-                                self.name, self.fullname, self.password)
-
+engine = create_engine("postgresql://sqlalchemy_test:sqlalchemy_test@localhost:5432/sqlalchemy_test", echo=True)
 Base.metadata.create_all(engine)
 
+
+def f():
+    Session1 = sessionmaker(bind=engine, autoflush=False)
+
+    session1 = Session1()
+    # ed_user = User(name='ed', fullname='Ed Jones', password='edspassword')
+    # session1.add(ed_user)
+    users = session1.query(User).all()
+
+    session1.close()
+    return users
+
+
 def main():
-    print('main')
-    Session = sessionmaker(bind=engine)
-    session = Session()
 
-    ed_user = User(name='ed', fullname='Ed Jones', password='edspassword')
-    session.add(ed_user)
-    session.query(User).filter(User.name == 'ed').\
-        update({User.name: 'jone'}, synchronize_session=False)
+    users = f()
+    print(users[0].name)
 
-    print('HHHHHHHHH')
-
-    for user in session.query(User).filter(User.name=='ed').filter(User.fullname=='Ed Jones'): 
-        print(user)
 
 if __name__ == '__main__':
     main()
